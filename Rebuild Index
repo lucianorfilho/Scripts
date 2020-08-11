@@ -1,0 +1,10 @@
+SELECT distinct (Index_Statement) 
+FROM ( SELECT CASE WHEN avg_fragmentation_in_percent BETWEEN 5 AND 30 THEN 'ALTER INDEX [' + name + '] ON ' + 
+(SELECT TOP 1 TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = OBJECT_NAME(b.[OBJECT_ID]) AND TABLE_TYPE = 'BASE TABLE') +
+'.[' + OBJECT_NAME(b.[OBJECT_ID]) + '] REORGANIZE;' WHEN avg_fragmentation_in_percent > 30 THEN 'ALTER INDEX [' + name + '] 
+ON ' + (SELECT TOP 1 TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = OBJECT_NAME(b.[OBJECT_ID]) 
+AND TABLE_TYPE = 'BASE TABLE') + '.[' + OBJECT_NAME(b.[OBJECT_ID]) + '] REBUILD;' END AS Index_Statement 
+FROM sys.dm_db_index_physical_stats (DB_ID(), NULL, NULL, NULL, NULL) AS a JOIN sys.indexes AS b 
+ON a.object_id = b.object_id AND a.index_id = b.index_id WHERE avg_fragmentation_in_percent > 5 
+AND index_type_desc <> 'HEAP' AND page_count > 640) index_rebuild_reorganize WHERE Index_Statement Is NOT NULL;
+
